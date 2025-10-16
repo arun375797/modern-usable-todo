@@ -106,10 +106,10 @@ export default function Calendar({ tasks = [], view = 'month' }) {
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-4">
         {/* Day headers */}
         {DAYS.map(day => (
-          <div key={day} className="text-center py-2 text-sm font-medium text-gray-400">
+          <div key={day} className="text-center py-3 text-sm font-medium text-gray-400">
             {day}
           </div>
         ))}
@@ -127,21 +127,21 @@ export default function Calendar({ tasks = [], view = 'month' }) {
               transition={{ delay: idx * 0.01 }}
               onClick={() => handleDateClick(day.date)}
               className={`
-                relative min-h-[100px] p-3 rounded-lg cursor-pointer transition-all
+                relative min-h-[140px] p-4 rounded-lg cursor-pointer transition-all
                 ${day.isCurrentMonth ? 'bg-white/5 hover:bg-white/10' : 'bg-white/[0.02] text-gray-600'}
                 ${today ? 'ring-2 ring-cyan-400' : 'border border-white/10'}
               `}
             >
-              <div className={`text-sm font-medium ${today ? 'text-cyan-400' : ''}`}>
+              <div className={`text-base font-medium ${today ? 'text-cyan-400' : ''}`}>
                 {day.date.getDate()}
               </div>
               
               {/* Tasks preview */}
-              <div className="mt-2 space-y-1">
-                {dayTasks.slice(0, 3).map((task, i) => (
+              <div className="mt-3 space-y-2">
+                {dayTasks.slice(0, 4).map((task, i) => (
                   <div
                     key={i}
-                    className="text-xs px-2 py-1 rounded truncate"
+                    className="text-xs px-2 py-1.5 rounded truncate"
                     style={{ 
                       backgroundColor: task.color ? `${task.color}20` : '#8b5cf620',
                       borderLeft: `3px solid ${task.color || '#8b5cf6'}`
@@ -150,9 +150,9 @@ export default function Calendar({ tasks = [], view = 'month' }) {
                     {task.title}
                   </div>
                 ))}
-                {dayTasks.length > 3 && (
+                {dayTasks.length > 4 && (
                   <div className="text-xs text-gray-400 px-2">
-                    +{dayTasks.length - 3} more
+                    +{dayTasks.length - 4} more
                   </div>
                 )}
               </div>

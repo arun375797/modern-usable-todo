@@ -7,7 +7,7 @@
 }
 
 body{
-  @apply bg-slate-950 text-white;
+  @apply bg-black text-white;
   font-feature-settings: 'cv11', 'ss01';
   font-variation-settings: 'opsz' 32;
 }
@@ -19,7 +19,7 @@ body{
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-slate-950/50;
+  @apply bg-black/50;
 }
 
 ::-webkit-scrollbar-thumb {

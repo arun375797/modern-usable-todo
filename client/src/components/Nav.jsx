@@ -21,7 +21,7 @@ export default function Nav(){
   }
 
   return (
-    <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl">
+    <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <div className="font-bold text-xl bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
           TaskFlow
