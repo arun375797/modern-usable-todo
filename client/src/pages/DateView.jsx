@@ -150,28 +150,39 @@ export default function DateView() {
   const handleStatusChange = async (taskId, newStatus) => {
     try {
       const now = new Date().getTime()
+      const currentTimer = taskTimers[taskId]
       
       // Handle timer logic based on status
       if (newStatus === 'start') {
-        setTaskTimers(prev => ({
-          ...prev,
-          [taskId]: { startTime: now, pauseTime: 0, isRunning: true }
-        }))
-      } else if (newStatus === 'pause') {
-        const currentTimer = taskTimers[taskId]
-        if (currentTimer && currentTimer.isRunning) {
-          const elapsed = calculateElapsedTime(currentTimer.startTime, currentTimer.pauseTime)
+        if (currentTimer && !currentTimer.isRunning) {
+          // Resume from where we left off
           setTaskTimers(prev => ({
             ...prev,
-            [taskId]: { ...currentTimer, isRunning: false }
+            [taskId]: { ...currentTimer, isRunning: true }
+          }))
+        } else {
+          // Start fresh
+          setTaskTimers(prev => ({
+            ...prev,
+            [taskId]: { startTime: now, pauseTime: 0, isRunning: true }
+          }))
+        }
+      } else if (newStatus === 'pause') {
+        if (currentTimer && currentTimer.isRunning) {
+          // Calculate and save the elapsed time when pausing
+          const elapsed = Math.floor((Date.now() - currentTimer.startTime) / 1000)
+          setTaskTimers(prev => ({
+            ...prev,
+            [taskId]: { ...currentTimer, isRunning: false, elapsedTime: elapsed }
           }))
         }
       } else if (newStatus === 'finish') {
-        const currentTimer = taskTimers[taskId]
         if (currentTimer && currentTimer.isRunning) {
+          // Calculate and save the final elapsed time when finishing
+          const elapsed = Math.floor((Date.now() - currentTimer.startTime) / 1000)
           setTaskTimers(prev => ({
             ...prev,
-            [taskId]: { ...currentTimer, isRunning: false }
+            [taskId]: { ...currentTimer, isRunning: false, elapsedTime: elapsed }
           }))
         }
       }
@@ -254,7 +265,21 @@ export default function DateView() {
             // Calculate timer information
             const currentTimer = taskTimers[task._id]
             const isRunning = currentTimer && currentTimer.isRunning
-            const elapsedTime = isRunning ? calculateElapsedTime(currentTimer.startTime, currentTimer.pauseTime) : (task.timerPauseTime || 0)
+            let elapsedTime = 0
+            
+            if (currentTimer) {
+              if (isRunning) {
+                // Timer is running, calculate current elapsed time from start time
+                elapsedTime = Math.floor((Date.now() - currentTimer.startTime) / 1000)
+              } else {
+                // Timer is paused, use the saved elapsed time
+                elapsedTime = currentTimer.elapsedTime || 0
+              }
+            } else {
+              // No timer, use task's stored elapsed time
+              elapsedTime = task.timerPauseTime || 0
+            }
+            
             const totalDuration = parseDurationToSeconds(duration)
             const remainingTime = totalDuration > 0 ? calculateRemainingTime(totalDuration, elapsedTime) : null
             

@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { 
-  Clock, 
+  Clock,
   ExternalLink, 
   Timer, 
-  Play, 
-  Pause, 
   CheckCircle, 
   Circle, 
   Briefcase, 
@@ -25,6 +23,11 @@ import {
 export default function TaskCard({ task, onStatusChange, onTimerToggle, onEdit, onDelete, isRunning = false, elapsedTime = 0, remainingTime = null }) {
   const [isHovered, setIsHovered] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
+
+  // Status management function
+  const handleFinishTimer = () => {
+    onStatusChange?.(task._id, 'finish')
+  }
 
   // Helper functions for styling
   const getPriorityColor = (priority) => {
@@ -147,11 +150,11 @@ export default function TaskCard({ task, onStatusChange, onTimerToggle, onEdit, 
       
       <div className="relative z-10">
         {/* Enhanced Header with title and status */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
-                <h3 className="text-3xl font-black text-white group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-cyan-400 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-500 leading-tight mb-3">
+                <h3 className="text-3xl font-black text-white group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-cyan-400 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-500 leading-tight mb-2">
                   {task.title}
                 </h3>
                 
@@ -171,7 +174,7 @@ export default function TaskCard({ task, onStatusChange, onTimerToggle, onEdit, 
                   })
                   
                   return (
-                    <div className="flex items-center gap-3 text-xl font-bold text-cyan-200 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-6 py-3 rounded-2xl border-2 border-cyan-400/40 shadow-xl shadow-cyan-500/10 backdrop-blur-sm">
+                    <div className="flex items-center gap-2 text-lg font-bold text-cyan-200 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-4 py-2 rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/10 backdrop-blur-sm">
                       <Timer className="w-6 h-6" />
                       <span className="text-3xl font-black text-cyan-100">
                         {displayDuration !== null && displayDuration !== undefined ? formatDuration(displayDuration) : 'No time set'}
@@ -182,8 +185,8 @@ export default function TaskCard({ task, onStatusChange, onTimerToggle, onEdit, 
                 })()}
 
                 {/* Priority Badge for Minimized View */}
-                <div className="mt-4">
-                  <div className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-2xl border font-bold shadow-lg backdrop-blur-sm ${getPriorityColor(task.priority || 'medium')}`}>
+                <div className="mt-2">
+                  <div className={`inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-xl border font-bold shadow-lg backdrop-blur-sm ${getPriorityColor(task.priority || 'medium')}`}>
                     <div className={`w-3 h-3 rounded-full ${task.priority === 'high' ? 'bg-red-400' : task.priority === 'medium' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
                     <span className="capitalize text-base">{task.priority || 'Medium'}</span>
                   </div>
@@ -252,154 +255,69 @@ export default function TaskCard({ task, onStatusChange, onTimerToggle, onEdit, 
           className="overflow-hidden"
         >
           {/* Restructured Button Sections */}
-        <div className="space-y-4 mb-6">
+        <div className="space-y-3 mb-4">
           {/* Category Row */}
           <div className="flex items-center justify-center gap-4">
             {/* Category Badge */}
-            <div className="flex items-center gap-2 text-sm text-gray-300 bg-gradient-to-r from-gray-700/30 to-gray-800/30 px-4 py-2 rounded-2xl border border-gray-600/30 shadow-lg backdrop-blur-sm">
+            <div className="flex items-center gap-2 text-sm text-gray-300 bg-gradient-to-r from-gray-700/30 to-gray-800/30 px-3 py-1.5 rounded-xl border border-gray-600/30 shadow-lg backdrop-blur-sm">
               {React.createElement(getCategoryIcon(task.category || 'other'), { className: "w-4 h-4" })}
               <span className="capitalize text-base font-bold">{task.category || 'Other'}</span>
             </div>
           </div>
 
           {/* Status Control Buttons */}
-          <div className="flex justify-center gap-3">
-            {[
-              { value: 'start', label: 'Start', icon: Play, color: 'green' },
-              { value: 'pause', label: 'Pause', icon: Pause, color: 'yellow' },
-              { value: 'finish', label: 'Finish', icon: CheckCircle, color: 'purple' }
-            ].map((status) => {
-              const Icon = status.icon
-              return (
-                <motion.button
-                  key={status.value}
-                  whileHover={{ scale: 1.08, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onStatusChange?.(task._id, status.value)
-                  }}
-                  className={`
-                    px-6 py-3 text-base rounded-2xl border transition-all flex items-center gap-2 font-bold shadow-lg backdrop-blur-sm min-w-[100px] justify-center
-                    ${task.status === status.value 
-                      ? `bg-gradient-to-r from-${status.color}-500/25 to-${status.color}-600/20 border-${status.color}-400/50 text-${status.color}-200 shadow-${status.color}-500/20` 
-                      : 'bg-gradient-to-r from-gray-700/30 to-gray-800/30 border-gray-600/30 text-gray-400 hover:text-white hover:bg-gradient-to-r hover:from-gray-600/40 hover:to-gray-700/40 hover:border-gray-500/40'
-                    }
-                  `}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-base font-bold">{status.label}</span>
-                </motion.button>
-              )
-            })}
+          <div className="flex justify-center gap-2">
+            {/* Finish Button */}
+            <motion.button
+              whileHover={{ scale: 1.08, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleFinishTimer()
+              }}
+              className={`
+                px-4 py-2 text-sm rounded-xl border transition-all flex items-center gap-2 font-bold shadow-lg backdrop-blur-sm min-w-[80px] justify-center
+                ${task.status === 'finish'
+                  ? 'bg-gradient-to-r from-purple-500/25 to-purple-600/20 border-purple-400/50 text-purple-200 shadow-purple-500/20' 
+                  : 'bg-gradient-to-r from-gray-700/30 to-gray-800/30 border-gray-600/30 text-gray-400 hover:text-white hover:bg-gradient-to-r hover:from-purple-600/40 hover:to-purple-700/40 hover:border-purple-500/40'
+                }
+              `}
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span className="text-sm font-bold">Finish</span>
+            </motion.button>
           </div>
         </div>
 
         {/* Structured Time Information */}
-        <div className="bg-gradient-to-r from-gray-700/20 to-gray-800/20 rounded-2xl p-4 border border-gray-600/20 backdrop-blur-sm mb-6">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-gradient-to-r from-gray-700/20 to-gray-800/20 rounded-xl p-3 border border-gray-600/20 backdrop-blur-sm mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-bold text-gray-300 flex items-center gap-2">
               <Clock className="w-4 h-4" />
               Schedule
             </h4>
-            {remainingTime !== null && (
-              <div className="flex items-center gap-2 text-sm text-cyan-300 bg-gradient-to-r from-cyan-500/15 to-blue-500/15 px-3 py-1 rounded-xl border border-cyan-400/30">
-                <Timer className="w-4 h-4" />
-                <span className="font-bold">{formatCountdownTime(remainingTime)}</span>
-                <span className="text-cyan-400/80 font-medium">remaining</span>
-              </div>
-            )}
           </div>
           
           {(task.startTime || task.endTime) && (
-            <div className="flex items-center justify-center gap-4 text-lg">
+            <div className="flex items-center justify-center gap-3 text-base">
               {task.startTime && (
                 <div className="text-center">
                   <div className="text-xs text-gray-400 font-medium mb-1">START</div>
-                  <div className="text-white font-bold text-xl">{task.startTime}</div>
+                  <div className="text-white font-bold text-lg">{task.startTime}</div>
                 </div>
               )}
               {task.startTime && task.endTime && (
-                <div className="text-gray-400 text-2xl font-bold">→</div>
+                <div className="text-gray-400 text-xl font-bold">→</div>
               )}
               {task.endTime && (
                 <div className="text-center">
                   <div className="text-xs text-gray-400 font-medium mb-1">END</div>
-                  <div className="text-white font-bold text-xl">{task.endTime}</div>
+                  <div className="text-white font-bold text-lg">{task.endTime}</div>
                 </div>
               )}
             </div>
           )}
         </div>
-
-
-        {/* Structured Timer Display */}
-        {isRunning && (
-          <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl p-6 border border-blue-400/30 backdrop-blur-sm mb-6">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-pulse"></div>
-                <span className="text-blue-300 text-lg font-bold tracking-wider">TIMER RUNNING</span>
-              </div>
-              
-              {/* Main timer display */}
-              <div className="text-5xl font-mono font-black text-transparent bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400 bg-clip-text mb-2 tracking-wider">
-                {remainingTime !== null ? formatCountdownTime(remainingTime) : formatTime(elapsedTime)}
-              </div>
-              
-              {/* Timer label */}
-              {remainingTime !== null && (
-                <div className="text-sm text-blue-300/80 font-bold tracking-widest">
-                  COUNTDOWN
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Structured Paused Timer Display */}
-        {task.status === 'pause' && elapsedTime > 0 && (
-          <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-2xl p-6 border border-yellow-400/30 backdrop-blur-sm mb-6">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Pause className="w-4 h-4 text-yellow-400" />
-                <span className="text-yellow-300 text-lg font-bold tracking-wider">TIMER PAUSED</span>
-              </div>
-              
-              {/* Main time display */}
-              <div className="text-5xl font-mono font-black text-transparent bg-gradient-to-r from-yellow-400 via-orange-400 to-amber-400 bg-clip-text mb-2 tracking-wider">
-                {formatTime(elapsedTime)}
-              </div>
-              
-              {/* Paused label */}
-              <div className="text-sm text-yellow-300/80 font-bold tracking-widest">
-                ELAPSED TIME
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Structured Finished Timer Display */}
-        {task.status === 'finish' && elapsedTime > 0 && (
-          <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-2xl p-6 border border-green-400/30 backdrop-blur-sm mb-6">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <CheckCircle className="w-4 h-4 text-green-400" />
-                <span className="text-green-300 text-lg font-bold tracking-wider">TASK COMPLETED</span>
-              </div>
-              
-              {/* Main time display */}
-              <div className="text-5xl font-mono font-black text-transparent bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text mb-2 tracking-wider">
-                {formatTime(elapsedTime)}
-              </div>
-              
-              {/* Total time label */}
-              <div className="text-sm text-green-300/80 font-bold tracking-widest">
-                TOTAL TIME
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Enhanced External Link */}
         {task.url && (
