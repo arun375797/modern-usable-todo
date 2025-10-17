@@ -1,7 +1,26 @@
 import { motion } from 'framer-motion'
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Circle, PlayCircle, CheckCircle } from 'lucide-react'
+
+// Helper functions for task display
+const getPriorityColor = (priority) => {
+  const colors = {
+    high: 'bg-red-500',
+    medium: 'bg-orange-500',
+    low: 'bg-green-500'
+  }
+  return colors[priority] || colors.medium
+}
+
+const getStatusIcon = (status) => {
+  const icons = {
+    'start': Circle,
+    'pause': PlayCircle,
+    'finish': CheckCircle
+  }
+  return icons[status] || Circle
+}
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -53,7 +72,19 @@ export default function Calendar({ tasks = [], view = 'month' }) {
 
   const getTasksForDate = (date) => {
     const dateStr = date.toISOString().split('T')[0]
-    return tasks.filter(task => task.date === dateStr)
+    return tasks
+      .filter(task => task.date === dateStr)
+      .sort((a, b) => {
+        // First sort by status: finished tasks go to bottom
+        if (a.status === 'finish' && b.status !== 'finish') return 1
+        if (b.status === 'finish' && a.status !== 'finish') return -1
+        
+        // Then sort by start time
+        if (!a.startTime && !b.startTime) return 0
+        if (!a.startTime) return 1
+        if (!b.startTime) return -1
+        return a.startTime.localeCompare(b.startTime)
+      })
   }
 
   const isToday = (date) => {
@@ -138,18 +169,25 @@ export default function Calendar({ tasks = [], view = 'month' }) {
               
               {/* Tasks preview */}
               <div className="mt-3 space-y-2">
-                {dayTasks.slice(0, 4).map((task, i) => (
-                  <div
-                    key={i}
-                    className="text-xs px-2 py-1.5 rounded truncate"
-                    style={{ 
-                      backgroundColor: task.color ? `${task.color}20` : '#8b5cf620',
-                      borderLeft: `3px solid ${task.color || '#8b5cf6'}`
-                    }}
-                  >
-                    {task.title}
-                  </div>
-                ))}
+                {dayTasks.slice(0, 4).map((task, i) => {
+                  const StatusIcon = getStatusIcon(task.status || 'start')
+                  return (
+                    <div
+                      key={i}
+                      className="text-xs px-2 py-1.5 rounded truncate flex items-center gap-1"
+                      style={{ 
+                        backgroundColor: task.color ? `${task.color}20` : '#8b5cf620',
+                        borderLeft: `3px solid ${task.color || '#8b5cf6'}`
+                      }}
+                    >
+                      {/* Priority indicator */}
+                      <div className={`w-1.5 h-1.5 rounded-full ${getPriorityColor(task.priority || 'medium')}`}></div>
+                      {/* Status icon */}
+                      <StatusIcon className="w-3 h-3 text-gray-400" />
+                      <span className="truncate">{task.title}</span>
+                    </div>
+                  )
+                })}
                 {dayTasks.length > 4 && (
                   <div className="text-xs text-gray-400 px-2">
                     +{dayTasks.length - 4} more

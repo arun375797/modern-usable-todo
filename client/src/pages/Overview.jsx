@@ -3,39 +3,42 @@ import Calendar from '../components/Calendar'
 import { motion } from 'framer-motion'
 import { Clock, TrendingUp } from 'lucide-react'
 import { getTimeRemaining } from '../utils/timeUtils'
+import { taskAPI } from '../api/tasks'
+import { useAuth } from '../contexts/AuthContext'
+import LoginPrompt from '../components/LoginPrompt'
 
 export default function Overview(){
   const [tasks, setTasks] = useState([])
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [activeFilter, setActiveFilter] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
 
+  // Load all tasks
   useEffect(() => {
-    const storedTasks = localStorage.getItem('tasks')
-    if (storedTasks) {
-      setTasks(JSON.parse(storedTasks))
-    }
-
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      const storedTasks = localStorage.getItem('tasks')
-      if (storedTasks) {
-        setTasks(JSON.parse(storedTasks))
+    const loadTasks = async () => {
+      try {
+        setLoading(true)
+        const tasksData = await taskAPI.getAllTasks()
+        setTasks(tasksData)
+      } catch (error) {
+        console.error('Error loading tasks:', error)
+      } finally {
+        setLoading(false)
       }
     }
 
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('tasksUpdated', handleStorageChange)
+    if (user) {
+      loadTasks()
+    }
 
     // Update time every minute
     const interval = setInterval(() => {
       setCurrentTime(new Date())
     }, 60000)
 
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('tasksUpdated', handleStorageChange)
-      clearInterval(interval)
-    }
-  }, [])
+    return () => clearInterval(interval)
+  }, [user])
 
   const stats = useMemo(() => {
     const today = new Date().toISOString().split('T')[0]
@@ -61,9 +64,46 @@ export default function Overview(){
 
   const nextTaskTime = stats.nextTask ? getTimeRemaining(stats.nextTask.date, stats.nextTask.startTime, stats.nextTask.endTime) : null
 
+  // Filter tasks based on active filter
+  const filteredTasks = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const weekFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    
+    switch (activeFilter) {
+      case 'today':
+        return tasks.filter(t => t.date === today)
+      case 'week':
+        return tasks.filter(t => t.date >= today && t.date <= weekFromNow)
+      case 'overdue':
+        return tasks.filter(t => t.date < today && (t.status !== 'finish'))
+      case 'completed':
+        return tasks.filter(t => t.status === 'finish')
+      default:
+        return tasks
+    }
+  }, [tasks, activeFilter])
+
+  const filterButtons = [
+    { key: 'all', label: 'All Tasks', count: tasks.length },
+    { key: 'today', label: 'Today', count: tasks.filter(t => t.date === new Date().toISOString().split('T')[0]).length },
+    { key: 'week', label: 'This Week', count: tasks.filter(t => {
+      const today = new Date().toISOString().split('T')[0]
+      const weekFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      return t.date >= today && t.date <= weekFromNow
+    }).length },
+    { key: 'overdue', label: 'Overdue', count: tasks.filter(t => t.date < new Date().toISOString().split('T')[0] && t.status !== 'finish').length },
+    { key: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'finish').length },
+  ]
+
   return (
     <div className="w-full space-y-6">
-      {/* Stats Cards at Top */}
+      {/* Show login prompt if not authenticated */}
+      {!user ? (
+        <LoginPrompt action="view and manage your tasks" />
+      ) : (
+        <>
+          {/* Stats Cards at Top */}
       <div className="grid grid-cols-3 gap-4">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -120,8 +160,37 @@ export default function Overview(){
         </motion.div>
       </div>
 
+      {/* Quick Filter Buttons */}
+      <div className="flex flex-wrap gap-2">
+        {filterButtons.map((filter) => (
+          <motion.button
+            key={filter.key}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setActiveFilter(filter.key)}
+            className={`
+              px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2
+              ${activeFilter === filter.key 
+                ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-lg shadow-purple-500/50' 
+                : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/10'
+              }
+            `}
+          >
+            {filter.label}
+            <span className={`
+              px-2 py-0.5 rounded-full text-xs
+              ${activeFilter === filter.key ? 'bg-white/20' : 'bg-white/10'}
+            `}>
+              {filter.count}
+            </span>
+          </motion.button>
+        ))}
+      </div>
+
       {/* Full-width Calendar */}
-      <Calendar tasks={tasks} />
+      <Calendar tasks={filteredTasks} />
+        </>
+      )}
     </div>
   )
 }

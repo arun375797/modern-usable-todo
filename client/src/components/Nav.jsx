@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useAuth } from '../store/useAuth'
+import { useAuth } from '../contexts/AuthContext'
 
 const links = [
   { to: '/', label: 'Calendar', end: true },
@@ -8,15 +8,14 @@ const links = [
 
 export default function Nav(){
   const navigate = useNavigate()
-  const token = useAuth((state) => state.token)
-  const logout = useAuth((state) => state.logout)
+  const { user, logout } = useAuth()
 
   function handleAuth(){
-    if(token){
+    if(user){
       logout()
-      navigate('/auth')
+      navigate('/login')
     }else{
-      navigate('/auth')
+      navigate('/login')
     }
   }
 
@@ -45,7 +44,7 @@ export default function Nav(){
             onClick={handleAuth}
             className="ml-4 px-4 py-2 text-sm border border-purple-500/50 rounded-lg hover:bg-purple-500/20 transition-colors"
           >
-            {token ? 'Sign out' : 'Sign in'}
+            {user ? `Sign out (${user.name})` : 'Sign in'}
           </button>
         </nav>
       </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus } from 'lucide-react'
+import { X, Plus, Briefcase, Home, Heart, BookOpen, ShoppingCart, Car, Gamepad2, Palette } from 'lucide-react'
 
 const COLOR_OPTIONS = [
   { name: 'Purple', value: '#8b5cf6' },
@@ -13,6 +13,29 @@ const COLOR_OPTIONS = [
   { name: 'Yellow', value: '#eab308' },
 ]
 
+const PRIORITY_OPTIONS = [
+  { name: 'High', value: 'high', color: '#ef4444', bgColor: 'bg-red-500/10', borderColor: 'border-red-500/30' },
+  { name: 'Medium', value: 'medium', color: '#f97316', bgColor: 'bg-orange-500/10', borderColor: 'border-orange-500/30' },
+  { name: 'Low', value: 'low', color: '#10b981', bgColor: 'bg-green-500/10', borderColor: 'border-green-500/30' },
+]
+
+const STATUS_OPTIONS = [
+  { name: 'Start', value: 'start', color: '#10b981', bgColor: 'bg-green-500/10', borderColor: 'border-green-500/30' },
+  { name: 'Pause', value: 'pause', color: '#f59e0b', bgColor: 'bg-yellow-500/10', borderColor: 'border-yellow-500/30' },
+  { name: 'Finish', value: 'finish', color: '#8b5cf6', bgColor: 'bg-purple-500/10', borderColor: 'border-purple-500/30' },
+]
+
+const CATEGORY_OPTIONS = [
+  { name: 'Work', value: 'work', icon: Briefcase, color: '#3b82f6' },
+  { name: 'Personal', value: 'personal', icon: Home, color: '#8b5cf6' },
+  { name: 'Health', value: 'health', icon: Heart, color: '#10b981' },
+  { name: 'Learning', value: 'learning', icon: BookOpen, color: '#f59e0b' },
+  { name: 'Shopping', value: 'shopping', icon: ShoppingCart, color: '#ec4899' },
+  { name: 'Travel', value: 'travel', icon: Car, color: '#06b6d4' },
+  { name: 'Entertainment', value: 'entertainment', icon: Gamepad2, color: '#8b5cf6' },
+  { name: 'Other', value: 'other', icon: Palette, color: '#6b7280' },
+]
+
 export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -22,8 +45,11 @@ export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
     endTime: '',
     resources: '',
     color: COLOR_OPTIONS[0].value,
+    priority: PRIORITY_OPTIONS[1].value, // Default to Medium
+    category: CATEGORY_OPTIONS[0].value, // Default to Work
     date: selectedDate || new Date().toISOString().split('T')[0]
   })
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -36,6 +62,8 @@ export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
       endTime: '',
       resources: '',
       color: COLOR_OPTIONS[0].value,
+      priority: PRIORITY_OPTIONS[1].value,
+      category: CATEGORY_OPTIONS[0].value,
       date: selectedDate || new Date().toISOString().split('T')[0]
     })
     onClose()
@@ -43,6 +71,26 @@ export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleClose = () => {
+    // Check if form has any data
+    const hasData = formData.title || formData.description || formData.url || 
+                   formData.startTime || formData.endTime || formData.resources
+    if (hasData) {
+      setShowConfirmModal(true)
+    } else {
+      onClose()
+    }
+  }
+
+  const handleConfirmClose = () => {
+    setShowConfirmModal(false)
+    onClose()
+  }
+
+  const handleCancelClose = () => {
+    setShowConfirmModal(false)
   }
 
   return (
@@ -54,7 +102,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
           />
           
@@ -74,7 +122,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
                 <motion.button
                   whileHover={{ scale: 1.1, rotate: 90 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -177,6 +225,46 @@ export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
                   />
                 </div>
 
+                {/* Priority, Status, and Category */}
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Priority */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Priority
+                    </label>
+                    <select
+                      value={formData.priority}
+                      onChange={(e) => handleChange('priority', e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-800 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-white"
+                    >
+                      {PRIORITY_OPTIONS.map((priority) => (
+                        <option key={priority.value} value={priority.value}>
+                          {priority.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+
+                  {/* Category */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Category
+                    </label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => handleChange('category', e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-800 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-white"
+                    >
+                      {CATEGORY_OPTIONS.map((category) => (
+                        <option key={category.value} value={category.value}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 {/* Color Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-3">
@@ -213,6 +301,51 @@ export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
               </form>
             </div>
           </motion.div>
+
+          {/* Confirmation Modal */}
+          <AnimatePresence>
+            {showConfirmModal && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                >
+                  <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl border border-white/10 p-6 max-w-md w-full">
+                    <h3 className="text-xl font-bold text-white mb-4">Discard Changes?</h3>
+                    <p className="text-gray-400 mb-6">
+                      You have unsaved changes. Are you sure you want to close without saving?
+                    </p>
+                    <div className="flex gap-3">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleConfirmClose}
+                        className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+                      >
+                        Discard
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCancelClose}
+                        className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-colors"
+                      >
+                        Keep Editing
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </>
       )}
     </AnimatePresence>
