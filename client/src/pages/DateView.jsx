@@ -1,55 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, Clock, ExternalLink, Timer, Briefcase, Home, Heart, BookOpen, ShoppingCart, Car, Gamepad2, Palette, CheckCircle, Circle, PlayCircle, Pause, Play } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
 import TaskForm from '../components/TaskForm'
+import TaskCard from '../components/TaskCard'
 import { getTimeRemaining, formatDuration } from '../utils/timeUtils'
 import { formatTime, formatCountdownTime, calculateElapsedTime, calculateRemainingTime, parseDurationToSeconds, formatDurationFromSeconds } from '../utils/timerUtils'
 import { taskAPI } from '../api/tasks'
 import { useAuth } from '../contexts/AuthContext'
 import LoginPrompt from '../components/LoginPrompt'
 
-// Helper functions for task display
-const getPriorityColor = (priority) => {
-  const colors = {
-    high: 'text-red-400 bg-red-500/10 border-red-500/30',
-    medium: 'text-orange-400 bg-orange-500/10 border-orange-500/30',
-    low: 'text-green-400 bg-green-500/10 border-green-500/30'
-  }
-  return colors[priority] || colors.medium
-}
-
-const getStatusColor = (status) => {
-  const colors = {
-    'start': 'text-green-400 bg-green-500/10 border-green-500/30',
-    'pause': 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
-    'finish': 'text-purple-400 bg-purple-500/10 border-purple-500/30'
-  }
-  return colors[status] || colors['start']
-}
-
-const getStatusIcon = (status) => {
-  const icons = {
-    'start': Circle,
-    'pause': PlayCircle,
-    'finish': CheckCircle
-  }
-  return icons[status] || Circle
-}
-
-const getCategoryIcon = (category) => {
-  const icons = {
-    work: Briefcase,
-    personal: Home,
-    health: Heart,
-    learning: BookOpen,
-    shopping: ShoppingCart,
-    travel: Car,
-    entertainment: Gamepad2,
-    other: Palette
-  }
-  return icons[category] || Palette
-}
 
 export default function DateView() {
   const { date } = useParams()
@@ -59,6 +19,7 @@ export default function DateView() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [taskTimers, setTaskTimers] = useState({})
   const [loading, setLoading] = useState(true)
+  const [editingTask, setEditingTask] = useState(null)
   const { user } = useAuth()
 
   // Load tasks for the specific date
@@ -141,6 +102,21 @@ export default function DateView() {
     }
   }
 
+  const handleFormSubmit = async (taskData) => {
+    if (editingTask) {
+      // Editing existing task
+      await handleSaveTask({
+        ...editingTask,
+        ...taskData
+      })
+    } else {
+      // Creating new task
+      await handleAddTask(taskData)
+    }
+    // Reset editing state
+    setEditingTask(null)
+  }
+
   const handleDeleteTask = async (taskId) => {
     try {
       await taskAPI.deleteTask(taskId)
@@ -148,6 +124,27 @@ export default function DateView() {
     } catch (error) {
       console.error('Error deleting task:', error)
     }
+  }
+
+  const handleEditTask = (task) => {
+    setEditingTask(task)
+    setIsFormOpen(true)
+  }
+
+  const handleSaveTask = async (updatedTask) => {
+    try {
+      const savedTask = await taskAPI.updateTask(updatedTask._id, updatedTask)
+      setTasks(prev => prev.map(task => 
+        task._id === updatedTask._id ? savedTask : task
+      ))
+    } catch (error) {
+      console.error('Error updating task:', error)
+    }
+  }
+
+  const handleFormClose = () => {
+    setIsFormOpen(false)
+    setEditingTask(null)
   }
 
   const handleStatusChange = async (taskId, newStatus) => {
@@ -267,213 +264,16 @@ export default function DateView() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.1 }}
-                className={`group bg-white/5 hover:bg-white/10 border rounded-xl p-6 transition-all ${
-                  task.status === 'finish' 
-                    ? 'border-green-500/50 bg-green-500/5' 
-                    : 'border-white/10'
-                }`}
-                style={{ borderLeftColor: task.status === 'finish' ? '#10b981' : task.color, borderLeftWidth: '4px' }}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    {/* Title and Badges */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold mb-2">{task.title}</h3>
-                        
-                        {/* Priority, Status, and Category Badges */}
-                        <div className="flex items-center flex-wrap gap-2 mb-3">
-                          {/* Priority Badge */}
-                          <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full border ${getPriorityColor(task.priority || 'medium')}`}>
-                            <div className={`w-2 h-2 rounded-full ${task.priority === 'high' ? 'bg-red-400' : task.priority === 'medium' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
-                            <span className="capitalize">{task.priority || 'Medium'}</span>
-                          </div>
-
-                          {/* Status Buttons */}
-                          <div className="flex gap-1">
-                            {[
-                              { value: 'start', label: 'Start', color: 'green' },
-                              { value: 'pause', label: 'Pause', color: 'yellow' },
-                              { value: 'finish', label: 'Finish', color: 'purple' }
-                            ].map((status) => (
-                              <motion.button
-                                key={status.value}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => handleStatusChange(task._id, status.value)}
-                                className={`
-                                  px-2 py-1 text-xs rounded-full border transition-all flex items-center gap-1
-                                  ${task.status === status.value 
-                                    ? `bg-${status.color}-500/20 border-${status.color}-500/50 text-${status.color}-400` 
-                                    : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
-                                  }
-                                `}
-                              >
-                                <div className={`w-2 h-2 rounded-full ${task.status === status.value ? `bg-${status.color}-400` : 'bg-gray-500'}`}></div>
-                                <span>{status.label}</span>
-                              </motion.button>
-                            ))}
-                          </div>
-
-                          {/* Category Badge */}
-                          <div className="flex items-center gap-1 text-xs text-gray-400 bg-white/5 px-2 py-1 rounded-full border border-white/10">
-                            {React.createElement(getCategoryIcon(task.category || 'other'), { className: "w-3 h-3" })}
-                            <span className="capitalize">{task.category || 'Other'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Time Information */}
-                    <div className="flex items-center flex-wrap gap-3 mb-3">
-                      {(task.startTime || task.endTime) && (
-                        <div className="flex items-center gap-1 text-sm text-gray-400 bg-white/5 px-3 py-1 rounded-full">
-                          <Clock className="w-4 h-4" />
-                          {task.startTime && <span>{task.startTime}</span>}
-                          {task.startTime && task.endTime && <span>-</span>}
-                          {task.endTime && <span>{task.endTime}</span>}
-                        </div>
-                      )}
-                      {duration && (
-                        <div className="flex items-center gap-1 text-sm text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/30">
-                          <Clock className="w-4 h-4" />
-                          <span>Total: {duration}</span>
-                        </div>
-                      )}
-                      {timeRemaining && (
-                        <div className={`flex items-center gap-1 text-sm ${timeRemaining.color} bg-white/5 px-3 py-1 rounded-full`}>
-                          <Timer className="w-4 h-4" />
-                          <span>{timeRemaining.text}</span>
-                        </div>
-                      )}
-                    </div>
-
-                            {/* Timer Display */}
-                            {isRunning && (
-                              <div className="mt-4 flex justify-center">
-                                <div className="relative">
-                                  {/* Outer glow ring */}
-                                  <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-lg animate-pulse"></div>
-                                  
-                                  {/* Timer container */}
-                                  <div className="relative bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-2 border-blue-400/50 rounded-2xl p-6 backdrop-blur-sm">
-                                    <div className="text-center">
-                                      <div className="flex items-center justify-center gap-2 mb-2">
-                                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                                        <span className="text-blue-300 text-sm font-medium">TIMER RUNNING</span>
-                                      </div>
-                                      
-                                      {/* Main countdown display */}
-                                      <div className="text-4xl font-mono font-bold text-blue-400 mb-1 tracking-wider">
-                                        {remainingTime !== null ? formatCountdownTime(remainingTime) : formatTime(elapsedTime)}
-                                      </div>
-                                      
-                                      {/* Countdown label */}
-                                      {remainingTime !== null && (
-                                        <div className="text-xs text-blue-300/80 font-medium">
-                                          COUNTDOWN
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Paused Timer Display */}
-                            {task.status === 'pause' && task.timerPauseTime > 0 && (
-                              <div className="mt-4 flex justify-center">
-                                <div className="relative">
-                                  {/* Outer glow ring */}
-                                  <div className="absolute inset-0 bg-yellow-500/20 rounded-full blur-lg"></div>
-                                  
-                                  {/* Timer container */}
-                                  <div className="relative bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-2 border-yellow-400/50 rounded-2xl p-6 backdrop-blur-sm">
-                                    <div className="text-center">
-                                      <div className="flex items-center justify-center gap-2 mb-2">
-                                        <Pause className="w-3 h-3 text-yellow-400" />
-                                        <span className="text-yellow-300 text-sm font-medium">TIMER PAUSED</span>
-                                      </div>
-                                      
-                                      {/* Main countdown display */}
-                                      <div className="text-4xl font-mono font-bold text-yellow-400 mb-1 tracking-wider">
-                                        {remainingTime !== null ? formatCountdownTime(remainingTime) : formatTime(task.timerPauseTime)}
-                                      </div>
-                                      
-                                      {/* Countdown label */}
-                                      {remainingTime !== null && (
-                                        <div className="text-xs text-yellow-300/80 font-medium">
-                                          COUNTDOWN
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Finished Timer Display */}
-                            {task.status === 'finish' && task.timerPauseTime > 0 && (
-                              <div className="mt-4 flex justify-center">
-                                <div className="relative">
-                                  {/* Outer glow ring */}
-                                  <div className="absolute inset-0 bg-green-500/20 rounded-full blur-lg"></div>
-                                  
-                                  {/* Timer container */}
-                                  <div className="relative bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-2 border-green-400/50 rounded-2xl p-6 backdrop-blur-sm">
-                                    <div className="text-center">
-                                      <div className="flex items-center justify-center gap-2 mb-2">
-                                        <CheckCircle className="w-3 h-3 text-green-400" />
-                                        <span className="text-green-300 text-sm font-medium">TASK COMPLETED</span>
-                                      </div>
-                                      
-                                      {/* Main time display */}
-                                      <div className="text-4xl font-mono font-bold text-green-400 mb-1 tracking-wider">
-                                        {formatTime(task.timerPauseTime)}
-                                      </div>
-                                      
-                                      {/* Total time label */}
-                                      <div className="text-xs text-green-300/80 font-medium">
-                                        TOTAL TIME
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                    {/* URL */}
-                    {task.url && (
-                      <a
-                        href={task.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-sm text-cyan-400 hover:text-cyan-300 transition-colors mb-3"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Open Link
-                      </a>
-                    )}
-
-                    {/* Resources */}
-                    {task.resources && (
-                      <div className="mt-3 p-3 bg-white/5 rounded-lg border border-white/5">
-                        <p className="text-sm text-gray-400 mb-1">Resources:</p>
-                        <p className="text-sm text-gray-300">{task.resources}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Delete Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleDeleteTask(task._id)}
-                    className="opacity-0 group-hover:opacity-100 p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-all"
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
-                </div>
+                <TaskCard
+                  task={task}
+                  onStatusChange={handleStatusChange}
+                  onEdit={handleEditTask}
+                  onDelete={handleDeleteTask}
+                  isRunning={isRunning}
+                  elapsedTime={elapsedTime}
+                  remainingTime={remainingTime}
+                />
               </motion.div>
             )
           })
@@ -483,9 +283,10 @@ export default function DateView() {
       {/* Task Form Modal */}
       <TaskForm
         isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSubmit={handleAddTask}
+        onClose={handleFormClose}
+        onSubmit={handleFormSubmit}
         selectedDate={date}
+        editingTask={editingTask}
       />
         </>
       )}
@@ -493,11 +294,4 @@ export default function DateView() {
   )
 }
 
-function X({ className }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  )
-}
 

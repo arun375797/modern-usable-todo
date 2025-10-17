@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Briefcase, Home, Heart, BookOpen, ShoppingCart, Car, Gamepad2, Palette } from 'lucide-react'
 
@@ -36,7 +36,7 @@ const CATEGORY_OPTIONS = [
   { name: 'Other', value: 'other', icon: Palette, color: '#6b7280' },
 ]
 
-export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
+export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate, editingTask = null }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -50,6 +50,38 @@ export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
     date: selectedDate || new Date().toISOString().split('T')[0]
   })
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+
+  // Populate form when editing a task
+  useEffect(() => {
+    if (editingTask) {
+      setFormData({
+        title: editingTask.title || '',
+        description: editingTask.description || '',
+        url: editingTask.url || '',
+        startTime: editingTask.startTime || '',
+        endTime: editingTask.endTime || '',
+        resources: editingTask.resources || '',
+        color: editingTask.color || COLOR_OPTIONS[0].value,
+        priority: editingTask.priority || PRIORITY_OPTIONS[1].value,
+        category: editingTask.category || CATEGORY_OPTIONS[0].value,
+        date: editingTask.date || selectedDate || new Date().toISOString().split('T')[0]
+      })
+    } else {
+      // Reset form for new task
+      setFormData({
+        title: '',
+        description: '',
+        url: '',
+        startTime: '',
+        endTime: '',
+        resources: '',
+        color: COLOR_OPTIONS[0].value,
+        priority: PRIORITY_OPTIONS[1].value,
+        category: CATEGORY_OPTIONS[0].value,
+        date: selectedDate || new Date().toISOString().split('T')[0]
+      })
+    }
+  }, [editingTask, selectedDate])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -117,7 +149,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
               {/* Header */}
               <div className="sticky top-0 bg-gradient-to-br from-gray-900 to-gray-800 border-b border-white/10 p-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                  Create New Task
+                  {editingTask ? 'Edit Task' : 'Create New Task'}
                 </h2>
                 <motion.button
                   whileHover={{ scale: 1.1, rotate: 90 }}
@@ -296,7 +328,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, selectedDate }) {
                   className="w-full py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg font-semibold text-white shadow-lg shadow-purple-500/50 hover:shadow-purple-500/70 transition-all flex items-center justify-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
-                  Create Task
+                  {editingTask ? 'Update Task' : 'Create Task'}
                 </motion.button>
               </form>
             </div>

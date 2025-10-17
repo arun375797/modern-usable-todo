@@ -7,10 +7,12 @@ import App from './App'
 import Overview from './pages/Overview'
 import Today from './pages/Today'
 import DateView from './pages/DateView'
+import Inbox from './pages/Inbox'
 import Auth from './pages/Auth'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ProtectedRoute from './components/ProtectedRoute'
+import TaskCardTest from './components/TaskCardTest'
 
 const router = createBrowserRouter([
   {
@@ -40,6 +42,18 @@ const router = createBrowserRouter([
             <DateView />
           </ProtectedRoute>
         ) 
+      },
+      { 
+        path: 'inbox', 
+        element: (
+          <ProtectedRoute>
+            <Inbox />
+          </ProtectedRoute>
+        ) 
+      },
+      { 
+        path: 'test', 
+        element: <TaskCardTest />
       },
       { path: 'auth', element: <Auth /> },
       { path: 'login', element: <Login /> },
